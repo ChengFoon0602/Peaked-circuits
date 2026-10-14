@@ -1,0 +1,12 @@
+{
+  "n_list": [
+    8,
+    10,
+    12
+  ],
+  "instances": 100,
+  "max_iter": 500,
+  "loss_target": -0.99,
+  "seed0": 20261014,
+  "quick": false
+}

@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+_*.log
+_*.py
+autotest_results/_bench_e2/
