@@ -1,0 +1,22 @@
+{
+  "timestamp": "20261014_200700",
+  "configuration": {
+    "n": 8,
+    "rqc_depth": 8,
+    "depths": [
+      4
+    ],
+    "seeds": 8,
+    "max_iter": 500,
+    "base_shots": 50,
+    "restarts": 1
+  },
+  "loss_target": -0.99,
+  "versions": {
+    "python": "3.12.15",
+    "numpy": "1.26.4",
+    "scipy": "1.11.2",
+    "quimb": "1.7.3",
+    "platform": "Windows-11-10.0.26200-SP0"
+  }
+}

@@ -10,6 +10,7 @@
     python autotest_peaked.py             # 正式模式：默认约 20-40 分钟（CPU 笔记本）
     python autotest_peaked.py --seeds 10 --max-iter 800      # 自定义规模
     python autotest_peaked.py --depths 4,8 --seeds 3 --n 10  # 自定义扫描
+    python autotest_peaked.py --restarts 3 --depths 6,9 --seeds 5  # 多起点：每实例 3 个随机初值取最优
 
 输出（默认写到脚本旁的 autotest_results/run_<时间戳>/）：
 
@@ -24,6 +25,8 @@
 - 可复现：每个实例用 qu.seed_rand(seed) 播种，同 seed 结果一致；
 - 训练目标 loss_target=-0.99（与官方 notebook 一致，属"激进上限"）；单次未达标（局部收敛）是正常现象，
   不代表运行失败——脚本记录「达0.99比率」仅供参考（通常为 0）；
+- --restarts R：多起点模式（R>1）。固定同一 rqc、用 R 个随机初值重开尖峰层训练并取最优；r=0 沿用旧播种序列，
+  因此 R=1 时与原结果逐位一致。raw_runs.csv 的 delta_per_restart 列给出各起点明细（首个值即单起点结果）。
 - 单次训练异常会记录错误并继续，不中断整个扫描。
 """
 import argparse
@@ -52,32 +55,49 @@ from circuits import qmps_f, negative_overlap, norm_f, average_peak_weight  # no
 from quimb.tensor.optimize import TNOptimizer  # noqa: E402
 
 
-def train_one(n, rqc_depth, pqc_depth, seed, max_iter, loss_target):
-    """训练一个实例，返回一条记录 dict。"""
+def train_one(n, rqc_depth, pqc_depth, seed, max_iter, loss_target, restarts=1):
+    """训练一个实例，返回一条记录 dict。
+
+    restarts > 1 时：固定同一 rqc，用不同随机初值重开尖峰层训练多次并取最优。
+    r=0 沿用旧播种序列，因此 restarts=1 时与原结果逐位一致（同种子可复现）。
+    """
     qu.seed_rand(seed)
     rqc = qmps_f(n, in_depth=rqc_depth, n_Qbit=n - 1, qmps_structure="brickwall")
-    pqc = qmps_f(n, in_depth=pqc_depth, n_Qbit=n - 1, qmps_structure="brickwall")
-    opt = TNOptimizer(
-        pqc,
-        loss_fn=negative_overlap,
-        norm_fn=norm_f,
-        loss_target=loss_target,
-        constant_tags=["MPS"],
-        loss_constants={"target": rqc},
-        autodiff_backend="autograd",
-        optimizer="L-BFGS-B",
-    )
-    t0 = time.time()
-    pqc_opt = opt.optimize(max_iter, tol=1e-10)
-    seconds = time.time() - t0
-    delta_best = float(-opt.loss_best)                        # 优化器跟踪的最佳峰值权重
-    delta_measured = float(-negative_overlap(pqc_opt, rqc))   # 对返回电路直接测量
+
+    per_restart = []
+    best = None
+    total_seconds = 0.0
+    for r in range(restarts):
+        if r > 0:  # 第 0 个起点沿用旧播种序列（向后兼容）；其余起点用不同随机初值
+            qu.seed_rand(seed + 100003 * r)
+        pqc = qmps_f(n, in_depth=pqc_depth, n_Qbit=n - 1, qmps_structure="brickwall")
+        opt = TNOptimizer(
+            pqc,
+            loss_fn=negative_overlap,
+            norm_fn=norm_f,
+            loss_target=loss_target,
+            constant_tags=["MPS"],
+            loss_constants={"target": rqc},
+            autodiff_backend="autograd",
+            optimizer="L-BFGS-B",
+        )
+        t0 = time.time()
+        pqc_opt = opt.optimize(max_iter, tol=1e-10)
+        total_seconds += time.time() - t0
+        delta_best = float(-opt.loss_best)                        # 优化器跟踪的最佳峰值权重
+        delta_measured = float(-negative_overlap(pqc_opt, rqc))   # 对返回电路直接测量
+        per_restart.append(round(delta_best, 6))
+        if best is None or delta_best > best["delta_best"]:
+            best = {"delta_best": delta_best, "delta_measured": delta_measured}
+
     return {
         "n": n, "rqc_depth": rqc_depth, "pqc_depth": pqc_depth, "seed": seed,
-        "max_iter": max_iter,
-        "delta_best": round(delta_best, 6), "delta_measured": round(delta_measured, 6),
-        "seconds": round(seconds, 2),
-        "reached_target": bool(delta_best >= (-loss_target) - 1e-6),
+        "max_iter": max_iter, "restarts": restarts,
+        "delta_best": round(best["delta_best"], 6),
+        "delta_measured": round(best["delta_measured"], 6),
+        "delta_per_restart": ";".join(str(v) for v in per_restart),
+        "seconds": round(total_seconds, 2),
+        "reached_target": bool(best["delta_best"] >= (-loss_target) - 1e-6),
         "error": "",
     }
 
@@ -106,14 +126,15 @@ def main():
     ap.add_argument("--seeds", type=int, default=None, help="每个 τp 的实例数（默认 5）")
     ap.add_argument("--max-iter", type=int, default=None, help="每次训练的最大迭代数（默认 500）")
     ap.add_argument("--base-shots", type=int, default=None, help="基线每档采样数（默认 50）")
+    ap.add_argument("--restarts", type=int, default=None, help="每个实例的随机起点数（默认 1；>1 时多重启取最优）")
     ap.add_argument("--outdir", type=str, default=None, help="输出目录（默认脚本旁 autotest_results/run_<时间戳>）")
     args = ap.parse_args()
 
     # 参数组合（--quick 覆盖默认；显式参数优先级最高）
     if args.quick:
-        cfg = dict(n=8, rqc_depth=8, depths=[2, 4], seeds=2, max_iter=100, base_shots=10)
+        cfg = dict(n=8, rqc_depth=8, depths=[2, 4], seeds=2, max_iter=100, base_shots=10, restarts=1)
     else:
-        cfg = dict(n=12, rqc_depth=12, depths=[3, 6, 9, 12], seeds=5, max_iter=500, base_shots=50)
+        cfg = dict(n=12, rqc_depth=12, depths=[3, 6, 9, 12], seeds=5, max_iter=500, base_shots=50, restarts=1)
     if args.n is not None:
         cfg["n"] = args.n
     if args.rqc_depth is not None:
@@ -126,6 +147,8 @@ def main():
         cfg["max_iter"] = args.max_iter
     if args.base_shots is not None:
         cfg["base_shots"] = args.base_shots
+    if args.restarts is not None:
+        cfg["restarts"] = args.restarts
 
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     outdir = args.outdir or os.path.join(HERE, "autotest_results", f"run_{stamp}")
@@ -134,7 +157,8 @@ def main():
 
     print("=== peaked-circuits autotest ===")
     print(f"配置: n={cfg['n']}, τr={cfg['rqc_depth']}, τp扫描={cfg['depths']}, "
-          f"每档实例={cfg['seeds']}, max_iter={cfg['max_iter']}, 基线shots={cfg['base_shots']}")
+          f"每档实例={cfg['seeds']}, max_iter={cfg['max_iter']}, 起点数={cfg['restarts']}, "
+          f"基线shots={cfg['base_shots']}")
     print(f"输出目录: {outdir}\n", flush=True)
 
     # config.json（可复现性记录）
@@ -150,8 +174,9 @@ def main():
 
     raw_path = os.path.join(outdir, "raw_runs.csv")
     raw_rows = []
-    raw_fields = ["n", "rqc_depth", "pqc_depth", "seed", "max_iter",
-                  "delta_best", "delta_measured", "seconds", "reached_target", "error"]
+    raw_fields = ["n", "rqc_depth", "pqc_depth", "seed", "max_iter", "restarts",
+                  "delta_best", "delta_measured", "delta_per_restart", "seconds",
+                  "reached_target", "error"]
 
     # ---- 逐档扫描（逐次增量落盘） ----
     total = len(cfg["depths"]) * cfg["seeds"]
@@ -163,11 +188,13 @@ def main():
             print(f"[{done}/{total}] τp={tp} seed={seed} ... ", end="", flush=True)
             try:
                 rec = train_one(cfg["n"], cfg["rqc_depth"], tp, seed,
-                                cfg["max_iter"], loss_target)
+                                cfg["max_iter"], loss_target, restarts=cfg["restarts"])
             except Exception as e:  # 单次失败不中断
                 rec = {"n": cfg["n"], "rqc_depth": cfg["rqc_depth"], "pqc_depth": tp,
                        "seed": seed, "max_iter": cfg["max_iter"],
-                       "delta_best": "", "delta_measured": "", "seconds": 0.0,
+                       "restarts": cfg["restarts"],
+                       "delta_best": "", "delta_measured": "", "delta_per_restart": "",
+                       "seconds": 0.0,
                        "reached_target": False, "error": f"{type(e).__name__}: {e}"}
             raw_rows.append(rec)
             write_csv(raw_path, raw_rows, raw_fields)
@@ -175,7 +202,9 @@ def main():
                 print(f"失败（已记录继续）: {rec['error']}", flush=True)
             else:
                 flag = " ✓达标" if rec["reached_target"] else ""
-                print(f"δ={rec['delta_best']:.4f} 用时={rec['seconds']:.1f}s{flag}", flush=True)
+                extra = (f" [{rec['restarts']}起点: {rec['delta_per_restart']}]"
+                         if rec.get("restarts", 1) > 1 else "")
+                print(f"δ={rec['delta_best']:.4f} 用时={rec['seconds']:.1f}s{flag}{extra}", flush=True)
 
     # ---- 随机基线 ----
     print("\n计算随机基线 ...", flush=True)
@@ -241,7 +270,7 @@ def main():
     lines = [
         "# autotest 结果摘要",
         "",
-        f"- 运行时间: {stamp} ｜ n={cfg['n']} ｜ τr={cfg['rqc_depth']} ｜ 每档实例={cfg['seeds']} ｜ max_iter={cfg['max_iter']}",
+        f"- 运行时间: {stamp} ｜ n={cfg['n']} ｜ τr={cfg['rqc_depth']} ｜ 每档实例={cfg['seeds']} ｜ max_iter={cfg['max_iter']} ｜ 起点数={cfg['restarts']}",
         f"- 训练目标 δ_target={-loss_target:.2f} ｜ 基线采样={cfg['base_shots']} shots",
         "",
         "| τp | 训练 δ（均值±标准差） | 最高 δ | 达0.99比率(参考) | 平均耗时(s) | 随机基线 | 增强倍数 |",

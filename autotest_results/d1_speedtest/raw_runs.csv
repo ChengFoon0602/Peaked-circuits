@@ -1,0 +1,2 @@
+﻿n,rqc_depth,pqc_depth,seed,max_iter,restarts,delta_best,delta_measured,delta_per_restart,seconds,reached_target,error
+12,50,8,8000,500,1,0.154094,0.154094,0.154094,52.61,False,
