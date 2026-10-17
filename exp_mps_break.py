@@ -611,17 +611,31 @@ def cmd_report(args):
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.6), dpi=200)
         ax = axes[0]
         pts = [c for c in curves if c["layout"] == "identity"]
+        # 单实例 R 的查表（画散点用）：R 只能取 k/n，误差棒会拉得又长又乱
+        raw = collections.defaultdict(list)
+        for r in rows:
+            if r["chi"] > 0 and r["layout"] == "identity":
+                raw[(r["n"], r["depth"], r["chi"])].append(r["R"])
         for n in sorted({c["n"] for c in pts}):
             for d in sorted({c["depth"] for c in pts if c["n"] == n}):
-                ss = [c for c in pts if c["n"] == n and c["depth"] == d]
-                ax.errorbar([c["chi"] for c in ss], [c["R_mean"] for c in ss],
-                            yerr=[c["R_std"] for c in ss], marker="o", ms=3, lw=1,
-                            capsize=2, label=f"n={n} G={ss[0]['gate_count']}")
+                ss = sorted([c for c in pts if c["n"] == n and c["depth"] == d],
+                            key=lambda c: c["chi"])
+                chis = [c["chi"] for c in ss]
+                line, = ax.plot(chis, [c["R_mean"] for c in ss], marker="o", ms=3.4,
+                                lw=1.2, label=f"n={n} G={ss[0]['gate_count']}")
+                # 每个实例一个细点，横向微抖开；均值仍是折线
+                for c in ss:
+                    vals = raw[(n, d, c["chi"])]
+                    if len(vals) <= 1:
+                        continue
+                    offs = np.linspace(0.90, 1.10, len(vals))
+                    ax.scatter([c["chi"] * o for o in offs], vals, s=10,
+                               color=line.get_color(), alpha=0.55, linewidths=0, zorder=1)
         ax.axhline(0.5, ls=":", color="gray", lw=1, label="random guess")
-        ax.set_xscale("log", base=2); ax.set_ylim(0.35, 1.02)
+        ax.set_xscale("log", base=2); ax.set_ylim(0.30, 1.04)
         ax.set_xlabel(r"bond dimension $\chi$")
         ax.set_ylabel("R (correct-bit fraction)")
-        ax.set_title("MPS marginal attack, R vs $\\chi$")
+        ax.set_title("MPS marginal attack: R vs $\\chi$  (line = mean, dots = instances)")
         ax.grid(True, which="both", alpha=0.3)
         ax.legend(fontsize=6, ncol=2)
 
