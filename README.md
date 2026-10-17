@@ -220,6 +220,10 @@ $\delta\approx0.15$ 即停，贴近公开电路的 $\delta_s\approx0.1$）；攻
 
 **时间标度**：$n=16$ 实测 $T\propto\chi^{p}$，$p=2.2\text{–}2.5$，落在 $a\chi^2+b\chi^3$ 混合标度区间内。
 
+![L2 chi_break scan](autotest_results/l2_mps_break/chi_break.png)
+
+*左：$R(\chi)$ 随键维的"台阶"随门数右移；右：$\chi_{\rm break}$ vs $G$，含 RCM 对照与 $\chi_{\rm sat}$ 参考线。*
+
 脚本：`exp_mps_break.py`（`gen` 训练+双校验 / `attack` 扫描 / `report` 汇总），
 产物在 `autotest_results/l2_mps_break/`。方法细节与踩坑记录见申请工作区
 `NUS张宇轩/PeakedCircuits三部曲/L2_MPS断点扫描_执行计划与结果.md`。
