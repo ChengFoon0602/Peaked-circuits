@@ -1,0 +1,26 @@
+{
+  "experiment": "E5 obfuscation (Theorem 4.4)",
+  "seed_target": 20261016,
+  "seed_rule": "SEED0 + 7919*(k+1)",
+  "n": 8,
+  "K": 20,
+  "max_iter": 500,
+  "mean_A_trained": 2.561643,
+  "mean_B_inter": 2.348424,
+  "mean_C_random": 0.899472,
+  "z_B_vs_2": 2.051,
+  "z_B_vs_A": -0.303,
+  "ci_A": [
+    1.412,
+    4.007
+  ],
+  "ci_B": [
+    2.027,
+    2.686
+  ],
+  "ci_C": [
+    0.486,
+    1.387
+  ],
+  "train_s": 569.0
+}

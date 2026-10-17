@@ -1,0 +1,33 @@
+{
+  "experiment": "E4 stitching leakage (Lemma 4.5)",
+  "seed": 20261015,
+  "grid": {
+    "main": {
+      "d": 64,
+      "eps": [
+        0.05,
+        0.1,
+        0.2
+      ],
+      "Lmax": 12,
+      "nsamples": 400
+    },
+    "adaptive": {
+      "d": 128,
+      "Lmax": 20,
+      "nsamples": 200
+    },
+    "dim": {
+      "dims": [
+        16,
+        64,
+        128
+      ],
+      "Lmax": 10,
+      "nsamples": 200
+    }
+  },
+  "elapsed_s": 202.7,
+  "median_relerr": 0.002367,
+  "max_relerr": 0.045298
+}

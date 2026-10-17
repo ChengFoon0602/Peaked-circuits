@@ -3,4 +3,4 @@ __pycache__/
 .ipynb_checkpoints/
 _*.log
 _*.py
-autotest_results/_bench_e2/
+autotest_results/_bench_*/
