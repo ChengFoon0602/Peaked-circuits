@@ -1,0 +1,18 @@
+{
+  "circuit": "peaked_circuit_heavy_hex_49x5072",
+  "n_qubits": 49,
+  "n_gates": 15265,
+  "depth": 565,
+  "qasm_version": "2.0",
+  "chunk_size": 2,
+  "max_bond": 16,
+  "cutoff": 0.01,
+  "tne_max_bond": 8,
+  "bitstring": "0110100111101111111101000010101000000011100011001",
+  "bitstring_reversed": "1001100011100000001010100001011111111011110010110",
+  "load_s": 0.06,
+  "contract_s": 15.09,
+  "tne_s": 0.05,
+  "extract_s": 2.52,
+  "total_s": 17.82
+}
