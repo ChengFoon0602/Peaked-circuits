@@ -129,10 +129,26 @@ def run_observables(bq, qc, n, chi, timeout):
     t0 = time.time()
     res = bq.run(qc, device="mps.cpu", pauli_sum=sums,
                  options={"mps_bond_dimension": chi}, timeout=timeout)
+    return flatten_expectations(res), time.time() - t0
+
+
+def flatten_expectations(res):
+    """把返回结果摊平成 (n,) 的 float 数组。
+
+    实测有两种形状：
+      * 一个 JobResult，`expectation_value` 是长度 n 的数组（mps.cpu 一次算完全部）
+      * n 个 JobResult，各自 `expectation_value` 是标量
+    早期版本只处理了后者，于是在前者上把数组塞进 float() 而报
+    "truth value of an array with more than one element is ambiguous"。
+    """
     res_list = res if isinstance(res, list) else [res]
-    vals = np.array([np.real(getattr(r, "expectation_value", np.nan))
-                     for r in res_list], dtype=float)
-    return vals, time.time() - t0
+    vals = []
+    for r in res_list:
+        ev = getattr(r, "expectation_value", None)
+        if ev is None:
+            continue
+        vals.extend(np.asarray(ev, dtype=float).ravel().tolist())
+    return np.asarray(vals, dtype=float)
 
 
 def main():
@@ -153,6 +169,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不提交作业")
     ap.add_argument("--no-save-counts", action="store_true",
                     help="默认会把原始 counts 落盘（gzip json），加此项则不存")
+    ap.add_argument("--job-id", type=str, default=None,
+                    help="不提交新作业，取回该 job_id 的结果重新分析（崩溃后救数据用）")
     ap.add_argument("--observables", action="store_true",
                     help="不用采样，改为提交 n 个单站点 <Z_i> 可观测量直接取边缘"
                          "（无采样噪声；能否一次传多个取决于平台）")
@@ -202,6 +220,31 @@ def main():
     rows = []
     print()
 
+    if args.job_id:
+        print(f"--- 取回作业 {args.job_id} ---", flush=True)
+        vals = flatten_expectations(bq.get(args.job_id))
+        print(f"  取到 {vals.size} 个期望值（应为 {n}）")
+        if vals.size != n:
+            print("  ⚠️  数量不符，下面按前 n 个打分，请人工核对。")
+        vals = vals[:n]
+        bits = "".join("1" if v < 0 else "0" for v in vals)
+        mm = float(np.nanmin(np.abs(vals)))
+        R = score_R(truth, bits)
+        R_rev = score_R(truth, bits[::-1])
+        ok = max(R, R_rev) == 1.0
+        print(f"  <Z> 前 6 个 = {np.round(vals[:6], 4)}")
+        print(f"  最小 |<Z>| = {mm:.4f}   最大 |<Z>| = {float(np.nanmax(np.abs(vals))):.4f}")
+        print(f"  边缘串 = {bits}")
+        print(f"  R = {R:.3f}   R(反转) = {R_rev:.3f}   {'★ 完全恢复' if ok else '未恢复'}")
+        path = os.path.join(OUT_DIR, f"observables_{name}_job{args.job_id}.csv")
+        with open(path, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.writer(f)
+            w.writerow(["site", "expectation_Z", "bit"])
+            for i, (v, b) in enumerate(zip(vals, bits)):
+                w.writerow([i, f"{v:.10f}", b])
+        print(f"  写出 {path}")
+        return
+
     if args.observables:
         for chi in chis:
             print(f"--- chi = {chi}（可观测量路线，无采样噪声）---", flush=True)
@@ -212,6 +255,12 @@ def main():
                 print("  → 若提示只支持单个可观测量，改用采样路线（去掉 --observables），"
                       "或用 exp_platform_pps.py 逐站点提交。")
                 continue
+            raw = os.path.join(OUT_DIR, f"observables_{name}_chi{chi}.csv")
+            with open(raw, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f)
+                w.writerow(["site", "expectation_Z"])
+                for i, v in enumerate(vals):
+                    w.writerow([i, f"{v:.10f}"])
             bits = "".join("1" if v < 0 else "0" for v in vals)
             mm = float(np.nanmin(np.abs(vals)))
             R = score_R(truth, bits)
