@@ -1,0 +1,50 @@
+[
+  {
+    "case": "n12_d20_t015_s0_G220",
+    "n": 12,
+    "gates_in": 220,
+    "gates_transpiled": 2425,
+    "ops": {
+      "u": 1765,
+      "cx": 660
+    },
+    "delta_engine": 0.16083021604833814,
+    "delta_qasm3": 0.160830216048341,
+    "delta_qasm2": 0.160830216048341,
+    "err_amp_qasm3": 7.850462293418876e-17,
+    "err_amp_qasm2": 7.850462293418876e-17,
+    "err_full_vector": 6.818117612787217e-15,
+    "secret": "100100001011",
+    "peak_bits": "100100001011",
+    "peak_prob": 0.16083021604834,
+    "uniform": 0.000244140625,
+    "enhancement": 658.7605649340006,
+    "qasm3_bytes": 117941,
+    "qasm2_bytes": 115511,
+    "ok": true
+  },
+  {
+    "case": "n12_d8_t015_s0_G88",
+    "n": 12,
+    "gates_in": 88,
+    "gates_transpiled": 973,
+    "ops": {
+      "u": 709,
+      "cx": 264
+    },
+    "delta_engine": 0.16659528019145128,
+    "delta_qasm3": 0.1665952801914518,
+    "delta_qasm2": 0.1665952801914518,
+    "err_amp_qasm3": 1.3877787807814457e-17,
+    "err_amp_qasm2": 1.3877787807814457e-17,
+    "err_full_vector": 7.875494462877211e-15,
+    "secret": "100100001011",
+    "peak_bits": "100100001011",
+    "peak_prob": 0.16659528019145114,
+    "uniform": 0.000244140625,
+    "enhancement": 682.3742676641839,
+    "qasm3_bytes": 47261,
+    "qasm2_bytes": 46283,
+    "ok": true
+  }
+]
