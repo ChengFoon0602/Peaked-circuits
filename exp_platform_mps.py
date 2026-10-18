@@ -288,12 +288,21 @@ def main():
                          "shots": "", "elapsed_s": elapsed, "note": "observables"})
         if not rows:
             sys.exit("全部失败，没有可写的结果。")
+        # 合并写：按 chi 保留最新一条，分批跑不会互相覆盖
         path = os.path.join(OUT_DIR, f"chi_sweep_{name}.csv")
+        merged = {}
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8-sig") as f:
+                for r in csv.DictReader(f):
+                    merged[str(r["chi"])] = {k: r.get(k, "") for k in rows[0]}
+        for r in rows:
+            merged[str(r["chi"])] = {k: r[k] for k in rows[0]}
+        ordered = [merged[k] for k in sorted(merged, key=int)]
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             w.writeheader()
-            w.writerows(rows)
-        print(f"\n写出 {path}")
+            w.writerows(ordered)
+        print(f"\n写出 {path}（累计 {len(ordered)} 个 chi）")
         return
 
     for chi in chis:
