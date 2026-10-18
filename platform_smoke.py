@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 """platform_smoke.py — BlueQubit 平台的冒烟测试与对照实验
 
-设计原则：**默认不花额度**。只有显式加 `--run` 才会真正提交作业；默认只做
-本地构造 + `estimate()`（平台给的运行时长/额度估算）。
+设计原则：**默认不花额度**。cpu / mps.cpu / pauli-path 三个模拟器都是免费的（有日配额），
+gpu / mps.gpu / quantum 计费，本脚本直接拒绝。stage 3 不加 `--run` 不提交作业。
 
-三个阶段
+四个阶段
 --------
+    stage 0   抓官方 peaked circuit（`bq.get_peaked_circuit`）：拿到 QASM + 真值 key，不耗作业
     stage 1   Bell 态：用 cpu 设备跑，取 statevector 与手算值对照（验证 token/网络/SDK）
     stage 2   我们导出的 12 比特 QASM：上传 → 跑 → 确认 argmax 等于我们的秘密串
-    stage 3   公开挑战电路（49/56 比特）：默认只 estimate；`--run` 才真跑
+    stage 3   公开挑战电路（49/56 比特）：默认只打印参数不提交；`--run` 才真跑
 
 用法
 ----
     set BLUEQUBIT_API_TOKEN=你的token
+    python platform_smoke.py --stage 0 --difficulty 40
     python platform_smoke.py --stage 1
     python platform_smoke.py --stage 2
     python platform_smoke.py --stage 3 --qasm D:/桌面文件/大三/peaked_qasm/peaked_circuit_P9_Hqap_56x1917.qasm --device mps.cpu
@@ -21,6 +23,10 @@
 ----
 * `device` 只允许 cpu / mps.cpu / pauli-path。`gpu`、`mps.gpu`、`quantum` 需要余额或
   真机排队，本脚本直接拒绝（要跑请手工调用，别误触）。
+* 设备名的坑：官方文档表格写 `pauli-path.cpu`，但 SDK 的 DEVICE_TYPES 里只有
+  `pauli-path` / `pauli-path.gpu`——传 `pauli-path.cpu` 会被 validate_device 拒绝。
+* `bq.estimate()` **只支持 cpu / gpu / quantum**（不支持 mps.cpu、pauli-path）。
+  后两个本来就免费，不需要估算。
 * 平台侧 `get_counts()` 的比特序是 qiskit 约定（qubit 0 在最右），与仓库约定相反，
   所以比对时两种顺序都试，并打印哪一种对上。
 """
@@ -45,6 +51,37 @@ def load_qasm(path):
     if "3.0" in head or "3;" in head:
         return qasm3.load(path), "3.0"
     return qasm2.load(path, custom_instructions=qasm2.LEGACY_CUSTOM_INSTRUCTIONS), "2.0"
+
+
+def stage0(bq, difficulties, circuit_id, out_dir):
+    """抓官方 peaked circuit：平台直接给 QASM 与真值 key，不用去网页下载。"""
+    os.makedirs(out_dir, exist_ok=True)
+    for d in difficulties:
+        print(f"\n=== stage 0 · get_peaked_circuit(difficulty={d}, id={circuit_id}) ===")
+        try:
+            pc = bq.get_peaked_circuit(d, circuit_id)
+        except Exception as e:
+            print(f"  失败：{type(e).__name__}: {e}")
+            print("  提示：difficulty 大概率是比特数（试 40 / 48 / 56 / 98）；"
+                  "也可能要求先有对应挑战的权限。")
+            continue
+        n = pc.circuit.num_qubits
+        nops = sum(pc.circuit.count_ops().values())
+        print(f"  {pc!r}")
+        print(f"  规模：{n} 比特 / {nops} 门 | key 长度 = {len(pc.key)} | QASM {len(pc.qasm_str)} 字节")
+        print(f"  key = {pc.key}")
+        print(f"  metadata = {pc.metadata}")
+        tag = f"difficulty{d}_id{circuit_id if circuit_id is not None else 'rand'}"
+        path = os.path.join(out_dir, f"official_{tag}.qasm")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(pc.qasm_str)
+        with open(os.path.join(out_dir, f"official_{tag}.json"), "w",
+                  encoding="utf-8") as f:
+            json.dump({"difficulty": d, "circuit_id": circuit_id,
+                       "num_qubits": n, "num_gates": nops,
+                       "key": pc.key, "metadata": pc.metadata}, f,
+                      ensure_ascii=False, indent=2)
+        print(f"  已存：{path}")
 
 
 def stage1(bq):
@@ -112,12 +149,16 @@ def stage3(bq, qasm_path, device, do_run, options):
 
 def main():
     ap = argparse.ArgumentParser(description="BlueQubit 平台冒烟")
-    ap.add_argument("--stage", type=int, default=1, choices=[1, 2, 3])
+    ap.add_argument("--stage", type=int, default=1, choices=[0, 1, 2, 3])
     ap.add_argument("--token", type=str, default=None,
                     help="不填则读环境变量 BLUEQUBIT_API_TOKEN")
     ap.add_argument("--qasm", type=str, default=None)
     ap.add_argument("--device", type=str, default="cpu")
     ap.add_argument("--shots", type=int, default=4000)
+    ap.add_argument("--difficulty", type=str, default="40",
+                    help="stage 0：难度（大概率是比特数），可逗号分隔试多个")
+    ap.add_argument("--circuit-id", type=int, default=None,
+                    help="stage 0：不填则平台随机给一个该难度的电路")
     ap.add_argument("--run", action="store_true", help="stage 3 才需要：真正提交作业")
     args = ap.parse_args()
 
@@ -132,7 +173,12 @@ def main():
     bq = bluequbit.init(token)
     print(f"BlueQubit SDK {getattr(bluequbit, '__version__', '?')} 已初始化")
 
-    if args.stage == 1:
+    if args.stage == 0:
+        diffs = [int(x) for x in args.difficulty.split(",") if x.strip()]
+        stage0(bq, diffs, args.circuit_id,
+               os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "autotest_results", "p3_platform"))
+    elif args.stage == 1:
         stage1(bq)
     elif args.stage == 2:
         path = args.qasm or os.path.join(
