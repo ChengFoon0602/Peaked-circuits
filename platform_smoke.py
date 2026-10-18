@@ -61,9 +61,19 @@ def stage0(bq, difficulties, circuit_id, out_dir):
         try:
             pc = bq.get_peaked_circuit(d, circuit_id)
         except Exception as e:
-            print(f"  失败：{type(e).__name__}: {e}")
-            print("  提示：difficulty 大概率是比特数（试 40 / 48 / 56 / 98）；"
-                  "也可能要求先有对应挑战的权限。")
+            msg = str(e)
+            print(f"  失败：{type(e).__name__}: {msg}")
+            if "403" in msg or "Access denied" in msg:
+                print("  → 这是 403，不是 401：token 已被接受，是**端点级别的拒绝**。")
+                print("    差别很重要——401 才说明 token 错。先用 `--stage 1` 或")
+                print("    `python bq_diag.py` 确认 /jobs 能通，再回来查这个端点。")
+                print("    可能原因：账号未加入对应的挑战、套餐不含该功能、或该端点尚未开放。")
+            elif "401" in msg or "Unauthorized" in msg:
+                print("  → 401：token 无效。重新复制（注意首尾空格），重设后重开终端。")
+            else:
+                print("  → 参考 `python bq_diag.py` 的逐条探测结果。")
+            print("  不依赖它的替代方案：本地已有 3 个公开电路，其中两个 49 比特电路")
+            print("  已有与作者输出逐位一致的恢复串（autotest_results/p3_kremer_cpu/）。")
             continue
         n = pc.circuit.num_qubits
         nops = sum(pc.circuit.count_ops().values())
