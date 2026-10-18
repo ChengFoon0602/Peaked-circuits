@@ -174,6 +174,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不提交作业")
     ap.add_argument("--no-save-counts", action="store_true",
                     help="默认会把原始 counts 落盘（gzip json），加此项则不存")
+    ap.add_argument("--repeat", type=int, default=1,
+                    help="同一 chi 重复提交几次，用来检验平台是否可复现（默认 1）")
     ap.add_argument("--job-id", type=str, default=None,
                     help="不提交新作业，取回该 job_id 的结果重新分析（崩溃后救数据用）")
     ap.add_argument("--observables", action="store_true",
@@ -254,7 +256,19 @@ def main():
         for chi in chis:
             print(f"--- chi = {chi}（可观测量路线，无采样噪声）---", flush=True)
             try:
-                vals, elapsed = run_observables(bq, qc, n, chi, args.timeout)
+                runs, elapsed = [], 0.0
+                for rep in range(max(1, args.repeat)):
+                    v_rep, el = run_observables(bq, qc, n, chi, args.timeout)
+                    runs.append(v_rep)
+                    elapsed += el
+                    if rep > 0:
+                        d = np.max(np.abs(v_rep - runs[0]))
+                        b0 = "".join("1" if x < 0 else "0" for x in runs[0])
+                        b1 = "".join("1" if x < 0 else "0" for x in v_rep)
+                        same = sum(x == y for x, y in zip(b0, b1))
+                        print(f"    重复 {rep}: 与第 1 次的最大 |Δ<Z>| = {d:.6f}，"
+                              f"符号相同的位 {same}/{len(b0)}", flush=True)
+                vals = np.mean(runs, axis=0) if len(runs) > 1 else runs[0]
             except Exception as e:
                 msg = str(e)
                 print(f"  失败：{type(e).__name__}: {msg[:300]}")
