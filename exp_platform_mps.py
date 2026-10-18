@@ -33,6 +33,11 @@ P9（56 比特）没有真值，脚本会拒绝在没有真值的情况下打分
   （两次估计都是 58.4 s）。所以调大 shots 前先算这笔账。
 * 低键维下输出在样本层面就是均匀的（20000 shots 出 20000 个不同串），此时
   argmax 无意义；必须看逐位边缘表决。`--no-save-counts` 可关掉原始样本落盘。
+* **免费档对键维另有一道资金闸**：`heavy_hex_49x4020` 上 chi=16 可跑，chi=32 直接
+  `NOT_ENOUGH_FUNDS`（"Your circuit is too large for the free tier — try a smaller
+  bond dimension. We recommend ... at least $10.00"）。与 15 分钟时限无关。
+* 平台自报的 `estimated runtime` 既不计 shots 也不准（chi=8 两次都报 58.4 s，实测
+  28.3 s vs 280.6 s），不能用来排计划。
 * 只允许 `mps.cpu`（免费）；`mps.gpu` / `gpu` / `quantum` 会被拒绝。
 * 账户余额 $0 不影响 mps.cpu，但会让任何计费设备立即失败。
 """
@@ -251,9 +256,15 @@ def main():
             try:
                 vals, elapsed = run_observables(bq, qc, n, chi, args.timeout)
             except Exception as e:
-                print(f"  失败：{type(e).__name__}: {str(e)[:300]}")
-                print("  → 若提示只支持单个可观测量，改用采样路线（去掉 --observables），"
-                      "或用 exp_platform_pps.py 逐站点提交。")
+                msg = str(e)
+                print(f"  失败：{type(e).__name__}: {msg[:300]}")
+                if "too large for the free tier" in msg or "NOT_ENOUGH_FUNDS" in msg:
+                    print("  → 免费档对**键维**有资金闸：这条电路 chi=16 可以，chi=32 被拒，"
+                          "并建议余额 ≥ $10。")
+                    print("     与 15 分钟时限无关，纯账户/规模限制；换更小的 chi 或充值才能继续。")
+                elif "single observable" in msg:
+                    print("  → 该设备只接受一个可观测量，改用采样路线（去掉 --observables），"
+                          "或用 exp_platform_pps.py 逐站点提交。")
                 continue
             raw = os.path.join(OUT_DIR, f"observables_{name}_chi{chi}.csv")
             with open(raw, "w", newline="", encoding="utf-8-sig") as f:
