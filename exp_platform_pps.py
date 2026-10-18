@@ -41,6 +41,17 @@ TRUTH_DIR = os.path.join(HERE, "autotest_results", "p3_kremer_cpu")
 OUT_DIR = os.path.join(HERE, "autotest_results", "p3_platform_pps")
 QASM_DIR = "D:/桌面文件/大三/peaked_qasm"
 
+DEVICE_ALIASES = {
+    # 同一个设备在不同地方有三种写法：
+    #   平台定价页 / UI  -> "pps.cpu"（PPS = Pauli Path Simulation）
+    #   官方文档表格      -> "pauli-path.cpu"（这个 SDK 反而会拒绝）
+    #   SDK DEVICE_TYPES -> "pauli-path"（唯一能通过 validate_device 的）
+    "pps": "pauli-path",
+    "pps.cpu": "pauli-path",
+    "pauli-path.cpu": "pauli-path",
+    "pauli-path.gpu": "pauli-path.gpu",
+}
+
 FREE_DEVICES = {"pauli-path", "mps.cpu", "cpu"}
 
 
@@ -93,6 +104,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    args.device = DEVICE_ALIASES.get(args.device.lower(), args.device.lower())
     if args.device not in FREE_DEVICES:
         sys.exit(f"拒绝在 {args.device} 上跑：只允许 {sorted(FREE_DEVICES)}。")
 

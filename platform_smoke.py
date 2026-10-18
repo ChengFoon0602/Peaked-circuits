@@ -41,6 +41,17 @@ import numpy as np
 import qiskit
 from qiskit import qasm2, qasm3, QuantumCircuit
 
+DEVICE_ALIASES = {
+    # 同一个设备在不同地方有三种写法：
+    #   平台定价页 / UI  -> "pps.cpu"（PPS = Pauli Path Simulation）
+    #   官方文档表格      -> "pauli-path.cpu"（这个 SDK 反而会拒绝）
+    #   SDK DEVICE_TYPES -> "pauli-path"（唯一能通过 validate_device 的）
+    "pps": "pauli-path",
+    "pps.cpu": "pauli-path",
+    "pauli-path.cpu": "pauli-path",
+    "pauli-path.gpu": "pauli-path.gpu",
+}
+
 SAFE_DEVICES = {"cpu", "mps.cpu", "pauli-path"}
 
 
@@ -172,6 +183,7 @@ def main():
     ap.add_argument("--run", action="store_true", help="stage 3 才需要：真正提交作业")
     args = ap.parse_args()
 
+    args.device = DEVICE_ALIASES.get(args.device.lower(), args.device.lower())
     if args.device not in SAFE_DEVICES:
         sys.exit(f"拒绝在 {args.device} 上跑：本脚本只允许 {sorted(SAFE_DEVICES)}，"
                  f"真机/GPU 请手工调用以免误触额度。")
