@@ -116,6 +116,25 @@ def run_one(bq, qc, chi, shots, timeout):
     return counts, time.time() - t0
 
 
+def run_observables(bq, qc, n, chi, timeout):
+    """把 n 个单站点 <Z_i> 作为可观测量提交，返回逐站点期望值。
+
+    pauli-path 明确只允许一个可观测量；mps.cpu 是否允许一次传多个尚未验证，
+    报错就说明只能退回逐站点提交。
+    """
+    sums = []
+    for s in range(n):
+        pauli = "".join("Z" if i == s else "I" for i in range(n))
+        sums.append([(pauli, 1.0)])
+    t0 = time.time()
+    res = bq.run(qc, device="mps.cpu", pauli_sum=sums,
+                 options={"mps_bond_dimension": chi}, timeout=timeout)
+    res_list = res if isinstance(res, list) else [res]
+    vals = np.array([np.real(getattr(r, "expectation_value", np.nan))
+                     for r in res_list], dtype=float)
+    return vals, time.time() - t0
+
+
 def main():
     ap = argparse.ArgumentParser(description="平台 mps.cpu 的 chi 扫描")
     ap.add_argument("--circuit", type=str, default="heavy_hex_49x4020",
@@ -134,6 +153,9 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不提交作业")
     ap.add_argument("--no-save-counts", action="store_true",
                     help="默认会把原始 counts 落盘（gzip json），加此项则不存")
+    ap.add_argument("--observables", action="store_true",
+                    help="不用采样，改为提交 n 个单站点 <Z_i> 可观测量直接取边缘"
+                         "（无采样噪声；能否一次传多个取决于平台）")
     args = ap.parse_args()
 
     if args.device not in FREE_DEVICES:
@@ -179,6 +201,41 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     rows = []
     print()
+
+    if args.observables:
+        for chi in chis:
+            print(f"--- chi = {chi}（可观测量路线，无采样噪声）---", flush=True)
+            try:
+                vals, elapsed = run_observables(bq, qc, n, chi, args.timeout)
+            except Exception as e:
+                print(f"  失败：{type(e).__name__}: {str(e)[:300]}")
+                print("  → 若提示只支持单个可观测量，改用采样路线（去掉 --observables），"
+                      "或用 exp_platform_pps.py 逐站点提交。")
+                continue
+            bits = "".join("1" if v < 0 else "0" for v in vals)
+            mm = float(np.nanmin(np.abs(vals)))
+            R = score_R(truth, bits)
+            R_rev = score_R(truth, bits[::-1])
+            ok = max(R, R_rev) == 1.0
+            print(f"  <Z> 前 6 个 = {np.round(vals[:6], 4)}")
+            print(f"  边缘串 = {bits}")
+            print(f"  最小 |<Z>| = {mm:.4f}   R = {R:.3f}   R(反转) = {R_rev:.3f}   "
+                  f"{'★ 完全恢复' if ok else '未恢复'}   用时 {elapsed:.1f}s", flush=True)
+            rows.append({"circuit": name, "chi": chi, "ok": ok, "argmax": "",
+                         "R_argmax": "", "R_argmax_rev": "",
+                         "vote": bits, "R_vote": R, "R_vote_rev": R_rev,
+                         "min_margin": mm / 2, "peak_prob": "", "n_distinct": "",
+                         "shots": "", "elapsed_s": elapsed, "note": "observables"})
+        if not rows:
+            sys.exit("全部失败，没有可写的结果。")
+        path = os.path.join(OUT_DIR, f"chi_sweep_{name}.csv")
+        with open(path, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        print(f"\n写出 {path}")
+        return
+
     for chi in chis:
         print(f"--- chi = {chi} ---", flush=True)
         try:
