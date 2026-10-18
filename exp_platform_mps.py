@@ -223,12 +223,21 @@ def main():
                      "n_distinct": len(counts), "shots": total,
                      "elapsed_s": elapsed, "note": ""})
 
+    # 合并写：同一个 (circuit, chi) 只保留最新一条，避免后来的小批量把前面的覆盖掉
     path = os.path.join(OUT_DIR, f"chi_sweep_{name}.csv")
+    merged = {}
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8-sig") as f:
+            for r in csv.DictReader(f):
+                merged[(r["circuit"], str(r["chi"]))] = r
+    for r in rows:
+        merged[(r["circuit"], str(r["chi"]))] = {k: r[k] for k in rows[0]}
+    ordered = [merged[k] for k in sorted(merged, key=lambda k: int(k[1]))]
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
-        w.writerows(rows)
-    print(f"\n写出 {path}")
+        w.writerows(ordered)
+    print(f"\n写出 {path}（累计 {len(ordered)} 行）")
 
     hit = [r for r in rows if r["ok"]]
     if hit:
