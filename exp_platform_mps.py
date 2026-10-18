@@ -28,6 +28,11 @@ P9（56 比特）没有真值，脚本会拒绝在没有真值的情况下打分
 注意
 ----
 * `mps.cpu` 免费但有 **15 分钟/作业** 上限、1000 作业/天。
+* **采样比收缩还贵**（49 比特实测）：1000 shots 全作业 28 s，20000 shots 变成 281 s，
+  即采样约 **14 ms/shot**。而平台的 "estimated runtime" 只算收缩、**不计 shots**
+  （两次估计都是 58.4 s）。所以调大 shots 前先算这笔账。
+* 低键维下输出在样本层面就是均匀的（20000 shots 出 20000 个不同串），此时
+  argmax 无意义；必须看逐位边缘表决。`--no-save-counts` 可关掉原始样本落盘。
 * 只允许 `mps.cpu`（免费）；`mps.gpu` / `gpu` / `quantum` 会被拒绝。
 * 账户余额 $0 不影响 mps.cpu，但会让任何计费设备立即失败。
 """
@@ -127,6 +132,8 @@ def main():
     ap.add_argument("--device", type=str, default="mps.cpu")
     ap.add_argument("--token", type=str, default=None)
     ap.add_argument("--dry-run", action="store_true", help="只打印计划，不提交作业")
+    ap.add_argument("--no-save-counts", action="store_true",
+                    help="默认会把原始 counts 落盘（gzip json），加此项则不存")
     args = ap.parse_args()
 
     if args.device not in FREE_DEVICES:
@@ -189,6 +196,13 @@ def main():
         peak = counts[top] / total
         R = score_R(truth, top)
         R_rev = score_R(truth, top[::-1])     # 位序兜底：两种都比一次
+
+        if not args.no_save_counts:
+            import gzip
+            cpath = os.path.join(OUT_DIR, f"counts_{name}_chi{chi}.json.gz")
+            with gzip.open(cpath, "wt", encoding="utf-8") as f:
+                json.dump(counts, f)
+            print(f"  （原始 counts 已存 {os.path.basename(cpath)}）")
 
         vote, frac, min_margin, _ = marginal_vote(counts, n)
         Rm = score_R(truth, vote)
