@@ -89,6 +89,10 @@ def main():
     ap = argparse.ArgumentParser(description="平台 mps.cpu 的 chi 扫描")
     ap.add_argument("--circuit", type=str, default="heavy_hex_49x4020",
                     help="电路名（不含 peaked_circuit_ 前缀与 .qasm 后缀）")
+    ap.add_argument("--qasm", type=str, default=None,
+                    help="直接指定 QASM 文件，覆盖 --circuit（可用于我们自己的 12 比特电路）")
+    ap.add_argument("--truth", type=str, default=None,
+                    help="直接指定真值比特串（平台位序），覆盖从 json 读取")
     ap.add_argument("--chis", type=str, default="2,4,8",
                     help="bond dimension 列表，逗号分隔")
     ap.add_argument("--shots", type=int, default=2000)
@@ -103,12 +107,16 @@ def main():
         sys.exit(f"拒绝在 {args.device} 上跑：本脚本只允许 {sorted(FREE_DEVICES)}。")
 
     name = args.circuit
-    qasm = os.path.join(QASM_DIR, f"peaked_circuit_{name}.qasm")
+    if args.qasm:
+        qasm = args.qasm
+        name = os.path.basename(qasm).rsplit(".", 1)[0]
+    else:
+        qasm = os.path.join(QASM_DIR, f"peaked_circuit_{name}.qasm")
     if not os.path.isfile(qasm):
         cands = [os.path.basename(p) for p in glob.glob(os.path.join(QASM_DIR, "*.qasm"))]
         sys.exit(f"找不到 {qasm}\n可用的有：{cands}")
 
-    truth, n_truth = load_truth(name)
+    truth, n_truth = (args.truth, None) if args.truth else load_truth(name)
     qc, ver = load_qasm(qasm)
     n = qc.num_qubits
     nops = sum(qc.count_ops().values())
