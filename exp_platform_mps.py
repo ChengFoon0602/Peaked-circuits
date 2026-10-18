@@ -41,6 +41,8 @@ import os
 import sys
 import time
 
+import numpy as np
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 TRUTH_DIR = os.path.join(HERE, "autotest_results", "p3_kremer_cpu")
 OUT_DIR = os.path.join(HERE, "autotest_results", "p3_platform_mps")
@@ -72,6 +74,30 @@ def load_qasm(path):
 def score_R(ans, guess):
     n = len(ans)
     return (n - sum(a != b for a, b in zip(ans, guess))) / n
+
+
+def marginal_vote(counts, n):
+    """逐位多数表决——Kremer 的 `extract_bitstring` 用的就是这种读数。
+
+    低键维 MPS 的输出在**样本层面**几乎是均匀的（1000 shots 里 1000 个不同的串，
+    峰概率恰好 1/shots），此时 argmax 纯属噪声。但单比特边缘仍带有偏差：
+    逐位统计 P(bit=1)，超过 0.5 记 1，拼成候选串。
+
+    这也是本地 L2 的读数方式（`bitstring_from_marginals`），两条线才对得上。
+    """
+    ones = np.zeros(n)
+    total = 0
+    for s, c in counts.items():
+        if len(s) != n:
+            continue
+        total += c
+        for i, ch in enumerate(s):
+            if ch == "1":
+                ones[i] += c
+    frac = ones / max(total, 1)
+    bits = "".join("1" if f > 0.5 else "0" for f in frac)
+    # 偏离 0.5 最小的那位决定这个候选串可信不可信
+    return bits, frac, float(np.min(np.abs(frac - 0.5))), total
 
 
 def run_one(bq, qc, chi, shots, timeout):
@@ -153,20 +179,34 @@ def main():
         except Exception as e:
             print(f"  失败：{type(e).__name__}: {str(e)[:200]}")
             rows.append({"circuit": name, "chi": chi, "ok": False,
-                         "argmax": "", "R": "", "R_rev": "", "peak_prob": "",
-                         "elapsed_s": "", "note": str(e)[:120]})
+                         "argmax": "", "R_argmax": "", "R_argmax_rev": "",
+                         "vote": "", "R_vote": "", "R_vote_rev": "",
+                         "min_margin": "", "peak_prob": "", "n_distinct": "",
+                         "shots": "", "elapsed_s": "", "note": str(e)[:120]})
             continue
         total = sum(counts.values())
         top = max(counts, key=counts.get)
         peak = counts[top] / total
         R = score_R(truth, top)
         R_rev = score_R(truth, top[::-1])     # 位序兜底：两种都比一次
-        ok = max(R, R_rev) == 1.0
-        print(f"  argmax = {top}")
-        print(f"  峰概率 = {peak:.4f}   R = {R:.3f}   R(反转) = {R_rev:.3f}   "
-              f"{'★ 完全恢复' if ok else ''}   用时 {elapsed:.1f}s", flush=True)
-        rows.append({"circuit": name, "chi": chi, "ok": ok, "argmax": top,
-                     "R": R, "R_rev": R_rev, "peak_prob": peak,
+
+        vote, frac, min_margin, _ = marginal_vote(counts, n)
+        Rm = score_R(truth, vote)
+        Rm_rev = score_R(truth, vote[::-1])
+        best = max(R, R_rev, Rm, Rm_rev)
+        ok = best == 1.0
+        print(f"  argmax  = {top}")
+        print(f"    峰概率 {peak:.4f}（1/shots = 1/{1/max(peak,1e-12):.0f}）  "
+              f"R = {R:.3f}  R(反转) = {R_rev:.3f}")
+        print(f"  边缘表决 = {vote}")
+        print(f"    R = {Rm:.3f}  R(反转) = {Rm_rev:.3f}   最小偏离量 {min_margin:.4f}  "
+              f"不同串 {len(counts)}/{total}")
+        print(f"  → {'★ 完全恢复' if ok else '未恢复'}   用时 {elapsed:.1f}s", flush=True)
+        rows.append({"circuit": name, "chi": chi, "ok": ok,
+                     "argmax": top, "R_argmax": R, "R_argmax_rev": R_rev,
+                     "vote": vote, "R_vote": Rm, "R_vote_rev": Rm_rev,
+                     "min_margin": min_margin, "peak_prob": peak,
+                     "n_distinct": len(counts), "shots": total,
                      "elapsed_s": elapsed, "note": ""})
 
     path = os.path.join(OUT_DIR, f"chi_sweep_{name}.csv")
