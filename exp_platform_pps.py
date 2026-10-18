@@ -144,6 +144,10 @@ def main():
     print(f"电路      : {name}  ({n} 比特 / {sum(qc.count_ops().values())} 门, QASM {ver})")
     print(f"设备      : {args.device}   阈值 = {args.threshold:g}")
     print(f"真值      : {truth or '✗ 无（拒绝打分）'}")
+    n_gates = sum(qc.count_ops().values())
+    if n_gates > 700:
+        print(f"⚠️  本电路 {n_gates} 门（转译前）。pauli-path 免费档的硬限制是**转译后 ≤1000 门**，"
+              f"超过就要余额 ≥$25 才能用。按经验转译后大致翻倍，所以大概率会被拒。")
     print(f"站点      : {len(sites)} 个 → 需要 {len(sites)} 个作业 "
           f"（{sites[:6]}{'...' if len(sites) > 6 else ''}）")
     if not truth and not args.dry_run:
@@ -171,8 +175,14 @@ def main():
             ev = getattr(res, "expectation_value", None)
             v = float(np.real(ev)) if ev is not None else float("nan")
         except Exception as e:
+            msg = str(e)
             print(f"[{k}/{len(sites)}] site {site:2d}  失败：{type(e).__name__}: "
-                  f"{str(e)[:200]}")
+                  f"{msg[:200]}")
+            if "NOT_ENOUGH_FUNDS" in msg or "top up" in msg.lower():
+                print("\n→ 这是账户/规模限制，不是偶发失败，继续提交只会重复报错，已中止。")
+                print("  平台原文：pauli-path 在**转译后超过 1000 门**时要求余额 ≥ $25。")
+                print("  我们的 12 比特电路转译前就 973 门，转译后必然破千，所以免费档用不了。")
+                break
             continue
         dt = time.time() - t0
         vals[site] = v
