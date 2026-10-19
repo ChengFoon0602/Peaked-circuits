@@ -160,7 +160,7 @@ $$q_j=\left(1-\tfrac{d}{d-1}\varepsilon_j\right)q_{j-1}+\frac{\varepsilon_j}{d-1
 
 实验：固定一个目标电路 $C$（$n=8$，$\tau_r=8$），用 **20 个独立随机起点**各训练一个 $C'_k$（$\tau_p=8$，L-BFGS-B），测三组 HS 重叠。
 
-| 组 | 关系 | 对数 | $\mathbb{E}|\mathrm{Tr}|^2$ | bootstrap 95% CI | 理论 |
+| 组 | 关系 | 对数 | $\mathbb{E}\lvert\mathrm{Tr}\rvert^2$ | bootstrap 95% CI | 理论 |
 |---|---|---|---|---|---|
 | A 训练对 | $(C,\,C'_k)$ | 20 | 2.562 | [1.41, 4.01] | 2 |
 | B 解间 | $(C'_i,\,C'_j)$ | 190 | **2.348** | [2.03, 2.69] | 2（若混淆彻底） |
