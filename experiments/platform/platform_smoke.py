@@ -14,10 +14,10 @@ gpu / mps.gpu / quantum 计费，本脚本直接拒绝。stage 3 不加 `--run` 
 用法
 ----
     set BLUEQUBIT_API_TOKEN=你的token
-    python platform_smoke.py --stage 0 --difficulty 40
-    python platform_smoke.py --stage 1
-    python platform_smoke.py --stage 2
-    python platform_smoke.py --stage 3 --qasm D:/桌面文件/大三/peaked_qasm/peaked_circuit_P9_Hqap_56x1917.qasm --device mps.cpu
+    python experiments/platform/platform_smoke.py --stage 0 --difficulty 40
+    python experiments/platform/platform_smoke.py --stage 1
+    python experiments/platform/platform_smoke.py --stage 2
+    python experiments/platform/platform_smoke.py --stage 3 --qasm D:/桌面文件/大三/peaked_qasm/peaked_circuit_P9_Hqap_56x1917.qasm --device mps.cpu
 
 注意
 ----
@@ -54,6 +54,9 @@ DEVICE_ALIASES = {
 
 SAFE_DEVICES = {"cpu", "mps.cpu", "pauli-path"}
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+RESULTS = os.path.join(ROOT, "autotest_results")
+
 
 def load_qasm(path):
     """自动识别 OpenQASM 2.0 / 3.0。"""
@@ -77,12 +80,12 @@ def stage0(bq, difficulties, circuit_id, out_dir):
             if "403" in msg or "Access denied" in msg:
                 print("  → 这是 403，不是 401：token 已被接受，是**端点级别的拒绝**。")
                 print("    差别很重要——401 才说明 token 错。先用 `--stage 1` 或")
-                print("    `python bq_diag.py` 确认 /jobs 能通，再回来查这个端点。")
+                print("    `python experiments/platform/bq_diag.py` 确认 /jobs 能通，再回来查这个端点。")
                 print("    可能原因：账号未加入对应的挑战、套餐不含该功能、或该端点尚未开放。")
             elif "401" in msg or "Unauthorized" in msg:
                 print("  → 401：token 无效。重新复制（注意首尾空格），重设后重开终端。")
             else:
-                print("  → 参考 `python bq_diag.py` 的逐条探测结果。")
+                print("  → 参考 `python experiments/platform/bq_diag.py` 的逐条探测结果。")
             print("  不依赖它的替代方案：本地已有 3 个公开电路，其中两个 49 比特电路")
             print("  已有与作者输出逐位一致的恢复串（autotest_results/p3_kremer_cpu/）。")
             continue
@@ -129,8 +132,7 @@ def stage2(bq, qasm_path, shots):
     p_top = counts[top] / sum(counts.values())
     print(f"  平台 argmax = {top}（{p_top:.3f}，共 {sum(counts.values())} shots）")
 
-    ref = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "autotest_results", "p3_qasm", "roundtrip.json")
+    ref = os.path.join(RESULTS, "p3_qasm", "roundtrip.json")
     if os.path.exists(ref):
         with open(ref, encoding="utf-8") as f:
             rows = json.load(f)
@@ -197,15 +199,12 @@ def main():
 
     if args.stage == 0:
         diffs = [int(x) for x in args.difficulty.split(",") if x.strip()]
-        stage0(bq, diffs, args.circuit_id,
-               os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "autotest_results", "p3_platform"))
+        stage0(bq, diffs, args.circuit_id, os.path.join(RESULTS, "p3_platform"))
     elif args.stage == 1:
         stage1(bq)
     elif args.stage == 2:
         path = args.qasm or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "autotest_results", "p3_qasm", "n12_d8_t015_s0_G88.qasm")
+            RESULTS, "p3_qasm", "n12_d8_t015_s0_G88.qasm")
         stage2(bq, path, args.shots)
     else:
         if not args.qasm:

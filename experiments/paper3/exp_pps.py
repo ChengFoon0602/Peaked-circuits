@@ -17,9 +17,9 @@
 
 用法
 ----
-    python exp_pps.py verify                       # Δ=0 vs 精确态矢量
-    python exp_pps.py sweep --ns 12 --depths 220   # 扫 Δ 与两种截断
-    python exp_pps.py report
+    python experiments/paper3/exp_pps.py verify                       # Δ=0 vs 精确态矢量
+    python experiments/paper3/exp_pps.py sweep --ns 12 --depths 220   # 扫 Δ 与两种截断
+    python experiments/paper3/exp_pps.py report
 """
 from __future__ import annotations
 
@@ -37,8 +37,8 @@ from exp_mps_break import (CIRC_DIR, bitstring_from_marginals, gate_pattern,
                            load_circuits, norm_gate, score_R, sv_gates_to_state,
                            sv_marginals)
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                   "autotest_results", "p3_pps")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+OUT = os.path.join(ROOT, "autotest_results", "p3_pps")
 
 # Pauli 编码：0=I, 1=X, 2=Z, 3=Y；每个比特占 2 bit，site q 占 bit 2q..2q+1
 I2 = np.eye(2, dtype=complex)

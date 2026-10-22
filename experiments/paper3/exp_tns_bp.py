@@ -18,9 +18,9 @@
 
 用法
 ----
-    python exp_tns_bp.py verify                  # n=6, χ=χ_sat：必须与精确态矢量一致
-    python exp_tns_bp.py sweep --case n12_d8     # n=12, 6×2 网格, 扫 χ
-    python exp_tns_bp.py report
+    python experiments/paper3/exp_tns_bp.py verify                  # n=6, χ=χ_sat：必须与精确态矢量一致
+    python experiments/paper3/exp_tns_bp.py sweep --case n12_d8     # n=12, 6×2 网格, 扫 χ
+    python experiments/paper3/exp_tns_bp.py report
 """
 from __future__ import annotations
 
@@ -40,8 +40,8 @@ from exp_mps_break import (bitstring_from_marginals, gate_pattern, load_circuits
                            norm_gate, relabel, score_R, sv_gates_to_state,
                            sv_marginals)
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                   "autotest_results", "p3_tns_bp")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+OUT = os.path.join(ROOT, "autotest_results", "p3_tns_bp")
 
 SWAP4 = np.array([[1, 0, 0, 0],
                   [0, 0, 1, 0],

@@ -6,11 +6,11 @@
 
 用法（在仓库根目录、已 conda activate peaked 的前提下）：
 
-    python autotest_peaked.py --quick     # 冒烟模式：小参数全流程，约 1-2 分钟
-    python autotest_peaked.py             # 正式模式：默认约 20-40 分钟（CPU 笔记本）
-    python autotest_peaked.py --seeds 10 --max-iter 800      # 自定义规模
-    python autotest_peaked.py --depths 4,8 --seeds 3 --n 10  # 自定义扫描
-    python autotest_peaked.py --restarts 3 --depths 6,9 --seeds 5  # 多起点：每实例 3 个随机初值取最优
+    python experiments/baseline/autotest_peaked.py --quick     # 冒烟模式：小参数全流程，约 1-2 分钟
+    python experiments/baseline/autotest_peaked.py             # 正式模式：默认约 20-40 分钟（CPU 笔记本）
+    python experiments/baseline/autotest_peaked.py --seeds 10 --max-iter 800      # 自定义规模
+    python experiments/baseline/autotest_peaked.py --depths 4,8 --seeds 3 --n 10  # 自定义扫描
+    python experiments/baseline/autotest_peaked.py --restarts 3 --depths 6,9 --seeds 5  # 多起点：每实例 3 个随机初值取最优
 
 输出（默认写到脚本旁的 autotest_results/run_<时间戳>/）：
 
@@ -41,10 +41,13 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
 
-# 前置检查：必须在仓库根目录运行
-if not os.path.exists(os.path.join(HERE, "circuits.py")):
-    sys.exit("错误：请把本脚本放在 Peaked-circuits 仓库根目录（与 circuits.py 同级）再运行。")
+# 前置检查：上游的 circuits.py 应在仓库根
+if not os.path.exists(os.path.join(ROOT, "circuits.py")):
+    sys.exit("错误：找不到 circuits.py —— 本脚本应位于 <仓库根>/experiments/ 之下。")
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 # 先固定 matplotlib 后端，避免无界面环境报错
 import matplotlib  # noqa: E402
@@ -151,7 +154,7 @@ def main():
         cfg["restarts"] = args.restarts
 
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    outdir = args.outdir or os.path.join(HERE, "autotest_results", f"run_{stamp}")
+    outdir = args.outdir or os.path.join(ROOT, "autotest_results", f"run_{stamp}")
     os.makedirs(outdir, exist_ok=True)
     loss_target = -1 + 1e-2
 

@@ -7,8 +7,8 @@
 随机 peaked 电路的理论出发点。
 
 用法（仓库根目录，conda activate peaked）：
-    python exp_acceptance.py --quick     # 快速（约 10 秒）
-    python exp_acceptance.py             # 标准（约 1 分钟）
+    python experiments/paper2/exp_acceptance.py --quick     # 快速（约 10 秒）
+    python experiments/paper2/exp_acceptance.py             # 标准（约 1 分钟）
 输出（默认 autotest_results/e3_acceptance/）：
     acceptance.csv      逐点数据（n, d, delta, 理论值, 实测值, 置信区间, 样本数）
     acceptance_plot.png 理论曲线 vs 实测点（log 纵轴）

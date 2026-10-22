@@ -4,12 +4,13 @@
 用法（先装好 peaked 环境，见《复现指引_环境搭建与操作步骤.md》）：
     1. 把本文件复制到 clone 下来的仓库根目录（与 circuits.py 同级）
     2. conda activate peaked
-    3. python smoke_test.py
+    3. python experiments/baseline/smoke_test.py
 
 全部打印 [1]-[4] 通过即环境就绪；[3] 做一次微型训练（约 10 秒）。
 """
 import sys, os, time
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # experiments/<group>/ → 仓库根
 
 import numpy as np
 print('numpy   :', np.__version__)

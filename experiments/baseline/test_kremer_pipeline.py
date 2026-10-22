@@ -16,7 +16,7 @@ Pass criteria
 
 Usage (from this repo's root, inside the hqap environment):
     set KREMER_HOME=D:\\桌面文件\\大三\\peaked-circuit-simulation
-    python test_kremer_pipeline.py --n 10 --depth 8
+    python experiments/baseline/test_kremer_pipeline.py --n 10 --depth 8
 """
 import argparse
 import os

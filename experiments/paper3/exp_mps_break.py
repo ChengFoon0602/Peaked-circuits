@@ -21,13 +21,13 @@ chi_break = 使 R = 1 的最小 chi。理论上限 chi_sat = 2^(n/2)（此时 MP
 子命令
 ------
     # 1) 训练并存盘（需要 peaked 环境：quimb 1.7.3 + circuits.py）
-    python exp_mps_break.py gen --n 12 --depths 4,8,12 --max-iter 800
+    python experiments/paper3/exp_mps_break.py gen --n 12 --depths 4,8,12 --max-iter 800
 
     # 2) 扫描（只依赖 numpy/scipy，任何环境都能跑）
-    python exp_mps_break.py attack --chis 1,2,4,8,16,32,64
+    python experiments/paper3/exp_mps_break.py attack --chis 1,2,4,8,16,32,64
 
     # 3) 报告（csv -> md + png）
-    python exp_mps_break.py report
+    python experiments/paper3/exp_mps_break.py report
 
 全部产物落在 autotest_results/l2_mps_break/。
 """
@@ -44,7 +44,8 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "autotest_results", "l2_mps_break")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+OUT = os.path.join(ROOT, "autotest_results", "l2_mps_break")
 CIRC_DIR = os.path.join(OUT, "circuits")
 
 

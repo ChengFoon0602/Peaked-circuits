@@ -13,8 +13,8 @@
 噪声实现：t-稀疏为"随机 t 位翻转"（论文的界是对抗式最坏情况；随机翻转是对平均情形的探测，见 summary 口径说明）。
 
 用法（仓库根目录，conda activate peaked）：
-    python exp_noise_robustness.py --quick    # 约 1 分钟
-    python exp_noise_robustness.py            # 约 5-10 分钟
+    python experiments/paper2/exp_noise_robustness.py --quick    # 约 1 分钟
+    python experiments/paper2/exp_noise_robustness.py            # 约 5-10 分钟
 输出（默认 autotest_results/e1_noise/）：
     hba_bias.csv / bsc_majority.csv / tsparse_center.csv / depolarizing.csv
     e1_noise_panels.png（2×2 面板图）

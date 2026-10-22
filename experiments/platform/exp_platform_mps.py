@@ -21,9 +21,9 @@ P9（56 比特）没有真值，脚本会拒绝在没有真值的情况下打分
 
 用法
 ----
-    python exp_platform_mps.py --dry-run                 # 只打印计划，不上传
-    python exp_platform_mps.py --circuit heavy_hex_49x4020 --chis 2,4,8
-    python exp_platform_mps.py --circuit heavy_hex_49x5072 --chis 2,4,8,16 --shots 2000
+    python experiments/platform/exp_platform_mps.py --dry-run                 # 只打印计划，不上传
+    python experiments/platform/exp_platform_mps.py --circuit heavy_hex_49x4020 --chis 2,4,8
+    python experiments/platform/exp_platform_mps.py --circuit heavy_hex_49x5072 --chis 2,4,8,16 --shots 2000
 
 注意
 ----
@@ -54,8 +54,9 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TRUTH_DIR = os.path.join(HERE, "autotest_results", "p3_kremer_cpu")
-OUT_DIR = os.path.join(HERE, "autotest_results", "p3_platform_mps")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+TRUTH_DIR = os.path.join(ROOT, "autotest_results", "p3_kremer_cpu")
+OUT_DIR = os.path.join(ROOT, "autotest_results", "p3_platform_mps")
 QASM_DIR = "D:/桌面文件/大三/peaked_qasm"
 
 FREE_DEVICES = {"mps.cpu", "cpu", "pauli-path"}

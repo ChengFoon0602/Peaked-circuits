@@ -11,7 +11,7 @@ this logic through a heredoc / stdin will crash with BrokenProcessPool.
 
 Usage (hqap environment, this repo's root):
     set KREMER_HOME=D:\\桌面文件\\大三\\peaked-circuit-simulation
-    python run_kremer_cpu.py --qasm D:\\桌面文件\\大三\\peaked_qasm\\peaked_circuit_heavy_hex_49x5072.qasm
+    python experiments/baseline/run_kremer_cpu.py --qasm D:\\桌面文件\\大三\\peaked_qasm\\peaked_circuit_heavy_hex_49x5072.qasm
 """
 import argparse
 import csv

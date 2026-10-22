@@ -20,8 +20,8 @@ L 块拼接后的总尖峰度保持 Theta(1)（约 e^{-1}），即"拼接放大"
   逐层作用后测 |<0|U_L···U_1|0>|^2，对样本求均值与标准误。
 
 用法（仓库根目录，conda activate peaked）：
-    python exp_stitching.py --quick      # 冒烟（约 10 秒）
-    python exp_stitching.py              # 正式（约 1-3 分钟）
+    python experiments/paper2/exp_stitching.py --quick      # 冒烟（约 10 秒）
+    python experiments/paper2/exp_stitching.py              # 正式（约 1-3 分钟）
 输出（默认 autotest_results/e4_stitching/）：
     stitching_layers.csv / stitching_adaptive.csv / stitching_dim.csv
     stitching_plot.png / summary.md / config.json

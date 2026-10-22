@@ -11,8 +11,8 @@
 
 用法
 ----
-    python make_platform_fig.py
-    python make_platform_fig.py --circuit n12_d8_t015_s0_G88 --n 12
+    python experiments/platform/make_platform_fig.py
+    python experiments/platform/make_platform_fig.py --circuit n12_d8_t015_s0_G88 --n 12
 """
 from __future__ import annotations
 
@@ -25,7 +25,8 @@ import re
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(HERE, "autotest_results", "p3_platform_mps")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+OUT_DIR = os.path.join(ROOT, "autotest_results", "p3_platform_mps")
 
 
 def load_R(name):

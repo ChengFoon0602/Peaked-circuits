@@ -19,8 +19,8 @@
   C 随机对照 (C, rand)      —— 无共享首列，理论 E|Tr|^2 = 1（E2 已用 100 实例测到 0.998）
 
 用法（仓库根目录，conda activate peaked）：
-    python exp_obfuscation.py --quick     # 冒烟（n=6, K=4, 约 20 s）
-    python exp_obfuscation.py             # 正式（n=8, K=16, 约 7-10 分钟）
+    python experiments/paper2/exp_obfuscation.py --quick     # 冒烟（n=6, K=4, 约 20 s）
+    python experiments/paper2/exp_obfuscation.py             # 正式（n=8, K=16, 约 7-10 分钟）
 输出（默认 autotest_results/e5_obfuscation/）：
     obf_train.csv / obf_pairs.csv / obf_control.csv
     obfuscation_plot.png / summary.md / config.json
@@ -35,10 +35,9 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if os.path.exists(os.path.join(HERE, "circuits.py")):
-    sys.path.insert(0, HERE)
-else:
-    sys.path.insert(0, r"D:/桌面文件/大三/Peaked-circuits")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 import quimb as qu  # noqa: E402
 from circuits import qmps_f, negative_overlap, norm_f  # noqa: E402

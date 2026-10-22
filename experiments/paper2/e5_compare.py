@@ -15,7 +15,8 @@ import sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-NEW = os.path.join(HERE, "autotest_results", "e5_obfuscation_40seeds", "obf_pairs.csv")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+NEW = os.path.join(ROOT, "autotest_results", "e5_obfuscation_40seeds", "obf_pairs.csv")
 K_OLD = 20
 
 

@@ -6,7 +6,7 @@ quimb tensor networks and (b) import the internal compression routine that the
 Kremer-Dupuis reference code relies on.
 
 Usage (any directory):
-    python smoke_test_p3.py
+    python experiments/baseline/smoke_test_p3.py
 
 Exit code 0 = environment usable. Non-zero = something below failed.
 """

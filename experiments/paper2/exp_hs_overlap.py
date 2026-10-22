@@ -19,15 +19,15 @@ n=5..12 的 Tr(C†C)=d 自检精确到 ~1e-15）；每个实例内嵌自检（�
 务必用 --instances 累积足够样本；脚本支持断点续跑（同命令重跑即跳过已完成实例）。
 
 用法（仓库根目录，conda activate peaked）：
-    python exp_hs_overlap.py --quick          # 冒烟（n=6, 3 实例, 约半分钟）
-    python exp_hs_overlap.py                  # 单进程正式跑（n=8/10/12 × 100；中断后同命令续跑）
-    python exp_hs_overlap.py --fresh          # 忽略已有结果，从零重跑
+    python experiments/paper2/exp_hs_overlap.py --quick          # 冒烟（n=6, 3 实例, 约半分钟）
+    python experiments/paper2/exp_hs_overlap.py                  # 单进程正式跑（n=8/10/12 × 100；中断后同命令续跑）
+    python experiments/paper2/exp_hs_overlap.py --fresh          # 忽略已有结果，从零重跑
 
 并行加速（多 worker 各写自己 (n, seed) 分片、互不冲突；全部跑完后统一出报告）：
-    python exp_hs_overlap.py --n-list 10 --instances 100 --no-report
-    python exp_hs_overlap.py --n-list 12 --instances 100 --i-start 0  --i-end 50 --no-report
-    python exp_hs_overlap.py --n-list 12 --instances 100 --i-start 50 --no-report
-    python exp_hs_overlap.py --n-list 8,10,12 --instances 100   # 收尾：跳过已完成 + 统一报告
+    python experiments/paper2/exp_hs_overlap.py --n-list 10 --instances 100 --no-report
+    python experiments/paper2/exp_hs_overlap.py --n-list 12 --instances 100 --i-start 0  --i-end 50 --no-report
+    python experiments/paper2/exp_hs_overlap.py --n-list 12 --instances 100 --i-start 50 --no-report
+    python experiments/paper2/exp_hs_overlap.py --n-list 8,10,12 --instances 100   # 收尾：跳过已完成 + 统一报告
 输出（默认 autotest_results/e2_hs_overlap/）：
     hs_overlap.csv（逐实例，增量落盘）/ hs_summary.csv / hs_overlap_plot.png / summary.md / config.json
 """
@@ -42,10 +42,9 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if os.path.exists(os.path.join(HERE, "circuits.py")):
-    sys.path.insert(0, HERE)
-else:
-    sys.path.insert(0, r"D:/桌面文件/大三/Peaked-circuits")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 import quimb as qu  # noqa: E402
 import quimb.tensor as qtn  # noqa: E402

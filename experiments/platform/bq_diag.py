@@ -10,8 +10,8 @@
 
 用法
 ----
-    python bq_diag.py                 # 读环境变量 BLUEQUBIT_API_TOKEN
-    python bq_diag.py --token xxx     # 或者显式传
+    python experiments/platform/bq_diag.py                 # 读环境变量 BLUEQUBIT_API_TOKEN
+    python experiments/platform/bq_diag.py --token xxx     # 或者显式传
 """
 from __future__ import annotations
 

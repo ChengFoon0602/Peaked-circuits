@@ -3,7 +3,7 @@
 拟合 δ(n) 的指数衰减并与论文参考线（1.189^-n、2^-n）对比。
 
 用法（在仓库根目录）：
-    python exp_scaling_analysis.py autotest_results/d2_n8 autotest_results/d2_n10 autotest_results/d2_n12
+    python experiments/baseline/exp_scaling_analysis.py autotest_results/d2_n8 autotest_results/d2_n10 autotest_results/d2_n12
 
 每个目录需含 autotest 产出的 config.json 与 sweep_summary.csv（每个目录恰好一个 τp 数据点）。
 输出（默认写入 autotest_results/d2_scaling/）：

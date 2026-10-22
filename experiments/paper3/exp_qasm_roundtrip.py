@@ -17,8 +17,8 @@ qiskit 的 qubit 0 是态矢量最低位，本仓库 site 0 是最高位，两�
 
 用法
 ----
-    python exp_qasm_roundtrip.py                       # 默认 n12_d8（176 门）
-    python exp_qasm_roundtrip.py --cases n12_d8_t015_s0,n12_d20_t015_s0
+    python experiments/paper3/exp_qasm_roundtrip.py                       # 默认 n12_d8（176 门）
+    python experiments/paper3/exp_qasm_roundtrip.py --cases n12_d8_t015_s0,n12_d20_t015_s0
 """
 from __future__ import annotations
 
@@ -35,8 +35,8 @@ from qiskit.quantum_info import Statevector
 from exp_mps_break import load_circuits, sv_gates_to_state
 from exp_pps import x_mask_gates
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                   "autotest_results", "p3_qasm")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+OUT = os.path.join(ROOT, "autotest_results", "p3_qasm")
 
 
 def build_circuit(n, gates, mask_bits):

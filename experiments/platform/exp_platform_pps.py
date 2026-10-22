@@ -16,14 +16,14 @@
 用法
 ----
     :: 先测单站点，确认能跑通、看耗时
-    python exp_platform_pps.py --qasm autotest_results/p3_qasm/n12_d8_t015_s0_G88.qasm ^
+    python experiments/platform/exp_platform_pps.py --qasm autotest_results/p3_qasm/n12_d8_t015_s0_G88.qasm ^
         --truth 100100001011 --sites 0
 
     :: 12 比特全跑（12 个作业）
-    python exp_platform_pps.py --qasm ... --truth 100100001011 --sites all
+    python experiments/platform/exp_platform_pps.py --qasm ... --truth 100100001011 --sites all
 
     :: 49 比特先取前 6 个站点（6 个作业）
-    python exp_platform_pps.py --circuit heavy_hex_49x4020 --sites 0-5
+    python experiments/platform/exp_platform_pps.py --circuit heavy_hex_49x4020 --sites 0-5
 
 注意
 ----
@@ -44,8 +44,9 @@ import time
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TRUTH_DIR = os.path.join(HERE, "autotest_results", "p3_kremer_cpu")
-OUT_DIR = os.path.join(HERE, "autotest_results", "p3_platform_pps")
+ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
+TRUTH_DIR = os.path.join(ROOT, "autotest_results", "p3_kremer_cpu")
+OUT_DIR = os.path.join(ROOT, "autotest_results", "p3_platform_pps")
 QASM_DIR = "D:/桌面文件/大三/peaked_qasm"
 
 DEVICE_ALIASES = {

@@ -191,7 +191,7 @@ $$q_j=\left(1-\tfrac{d}{d-1}\varepsilon_j\right)q_{j-1}+\frac{\varepsilon_j}{d-1
 
 ### L3 · Kremer 的 CPU 逐层收缩（TNO）
 
-对公开托管的 peaked circuit QASM 跑 `peaked-circuit-tno-cpu` 流程（`run_kremer_cpu.py`，
+对公开托管的 peaked circuit QASM 跑 `peaked-circuit-tno-cpu` 流程（`experiments/baseline/run_kremer_cpu.py`，
 参数沿用作者 notebook：`chunk=2, max_bond=16, cutoff=0.01, tne_max_bond=8`）：
 
 | 电路 | 规模 | 耗时 | 结果 |
@@ -228,7 +228,7 @@ $\delta\approx0.15$ 即停，贴近公开电路的 $\delta_s\approx0.1$）；攻
 
 *左：$R(\chi)$ 随键维的"台阶"随门数右移；右：$\chi_{\rm break}$ vs $G$，含 RCM 对照与 $\chi_{\rm sat}$ 参考线。*
 
-脚本：`exp_mps_break.py`（`gen` 训练+双校验 / `attack` 扫描 / `report` 汇总），
+脚本：`experiments/paper3/exp_mps_break.py`（`gen` 训练+双校验 / `attack` 扫描 / `report` 汇总），
 产物在 `autotest_results/l2_mps_break/`。方法细节与踩坑记录见申请工作区
 `NUS张宇轩/PeakedCircuits三部曲/L2_MPS断点扫描_执行计划与结果.md`。
 
@@ -252,7 +252,7 @@ $n=12$、$G=88$、$\delta\approx0.17$ 的结果：
 > **指标陷阱**：峰值若在 $0^n$，"全零估计"会被判满分 $R=1$。必须把峰值搬到随机秘密串上，
 > 并同时报告 maxerr 与掐死站点数。
 
-脚本：`exp_pps.py`；产物在 `autotest_results/p3_pps/`；细节见
+脚本：`experiments/paper3/exp_pps.py`；产物在 `autotest_results/p3_pps/`；细节见
 `NUS张宇轩/PeakedCircuits三部曲/第三篇复现_PPS与相对截断.md`。
 
 ### QASM 导出与闭环
@@ -266,7 +266,7 @@ $n=12$、$G=88$、$\delta\approx0.17$ 的结果：
 | `n12_d20` | 220 | 2425 | 0.1608 / 0.1608 / 0.1608 | $6.8\times10^{-15}$ | 659× |
 
 这一步把本地工作接上了任何平台（BlueQubit / IBM / Quantinuum）——"消费 QASM"（读公开电路）
-与"生产 QASM"（导出自己的电路）现在都闭环了。脚本 `exp_qasm_roundtrip.py`，产物
+与"生产 QASM"（导出自己的电路）现在都闭环了。脚本 `experiments/paper3/exp_qasm_roundtrip.py`，产物
 `autotest_results/p3_qasm/`，细节见 `第三篇复现_QASM导出与闭环.md`。
 
 ### 攻击 #3 · TNS（PEPS）+ BP —— **部分复现（未达成）**
@@ -283,7 +283,7 @@ $n=12$、$G=88$、$\delta\approx0.17$ 的结果：
 （$0.68$ vs 精确 $0.25$）——一个纠缠比特对在 norm 网络里就构成环，BP 会重复计数。论文靠
 **BP gauging + reduced tensor** 修正这一点，那一层未实现（估计再 3–5 天，不保证成功）。
 
-脚本 `exp_tns_bp.py`（需 `hqap` 环境的 quimb 1.11.2，1.7.3 无 BP 模块），产物
+脚本 `experiments/paper3/exp_tns_bp.py`（需 `hqap` 环境的 quimb 1.11.2，1.7.3 无 BP 模块），产物
 `autotest_results/p3_tns_bp/`，细节见 `第三篇复现_TNS与BP_部分复现.md`（含 4 个踩坑）。
 
 ### 平台侧交叉验证 · BlueQubit `mps.cpu`
@@ -303,19 +303,48 @@ $n=12$、$G=88$、$\delta\approx0.17$ 的结果：
 
 另：采样成本约 **14 ms/shot**（1000 shots → 28 s，20000 shots → 281 s），而平台的 `estimated runtime` **不计 shots**。
 
-脚本 `exp_platform_mps.py`（`--dry-run` 可只看计划）；产物 `autotest_results/p3_platform_mps/`；
+脚本 `experiments/platform/exp_platform_mps.py`（`--dry-run` 可只看计划）；产物 `autotest_results/p3_platform_mps/`；
 细节见 `第三篇复现_平台侧MPS攻击.md`。
 
-## 本仓库新增内容（相对原仓库）
+## 仓库结构
 
-| 文件 | 说明 |
-|---|---|
-| `smoke_test.py` | 环境自检：构建小电路 / 峰值计算 / 微型训练 / 绘图（四项全过即环境就绪） |
-| `autotest_peaked.py` | 自动化实验：多实例训练统计 + τp 扫描 + 随机基线，结果自动落盘、种子可复现 |
-| `autotest_results/` | 实验产出（逐次原始数据 CSV / 汇总 / 基线 / 曲线图 / 摘要 md） |
-| `exp_acceptance.py` / `exp_noise_robustness.py` / `exp_hs_overlap.py` | 第二篇复现三实验（E3 接受率 / E1 噪声鲁棒解码 / E2 HS 重叠统计）：断点续跑 + 多进程分片并行 |
-| `exp_stitching.py` / `exp_obfuscation.py` | 第二篇深化两实验（E4 拼接泄漏递推 Lemma 4.5 / E5 混淆定理 Theorem 4.4 的数值验证） |
-| `peaked_circuits .ipynb` | 已按原参数运行并保存训练输出 |
+根目录只放**上游原仓库**的文件；复现脚本一律在 `experiments/` 下按论文分组。
+
+```
+Peaked-circuits/
+├── circuits.py, functions.py        # 上游代码（未改动，被所有脚本 import）
+├── peaked_circuits .ipynb           # 上游 notebook（按原参数运行并保存训练输出）
+├── torch_example.ipynb              # 上游 notebook
+├── entropy.pdf, peak.pdf, *.pkl     # 上游素材
+├── experiments/
+│   ├── baseline/                    # 第一篇：环境自检与自动化训练
+│   ├── paper2/                      # 第二篇：E1–E5
+│   ├── paper3/                      # 第三篇：L2 / PPS / TNS+BP / QASM
+│   └── platform/                    # 平台侧攻击（BlueQubit）
+├── autotest_results/                # 实验产出（CSV / 汇总 / 图 / 摘要 md）
+└── _scratch/                        # 本地临时探针与日志（git 忽略）
+```
+
+| 目录 | 文件 | 说明 |
+|---|---|---|
+| `baseline/` | `smoke_test.py` | 环境自检：构建小电路 / 峰值计算 / 微型训练 / 绘图（四项全过即环境就绪） |
+| | `autotest_peaked.py` | 自动化实验：多实例训练统计 + τp 扫描 + 随机基线，结果自动落盘、种子可复现 |
+| | `exp_scaling_analysis.py` | D2 标度律拟合 |
+| | `run_kremer_cpu.py` / `test_kremer_pipeline.py` | 第三篇 L3 的 Kremer 流程封装与流水线测试 |
+| `paper2/` | `exp_acceptance.py` / `exp_noise_robustness.py` / `exp_hs_overlap.py` | E3 接受率 / E1 噪声鲁棒解码 / E2 HS 重叠统计：断点续跑 + 多进程分片并行 |
+| | `exp_stitching.py` / `exp_obfuscation.py` | E4 拼接泄漏递推（Lemma 4.5）/ E5 混淆定理（Theorem 4.4）数值验证 |
+| | `e5_compare.py` | E5 的 20 → 40 起点分层统计（双 bootstrap） |
+| `paper3/` | `exp_mps_break.py` | L2 键维断点扫描（`gen` / `attack` / `report`） |
+| | `exp_pps.py` | §4.4 Pauli 路径攻击 + relative truncation |
+| | `exp_tns_bp.py` | 攻击 #3：PEPS + belief propagation |
+| | `exp_qasm_roundtrip.py` | QASM 导出与三重校验闭环 |
+| `platform/` | `platform_smoke.py` | 平台连通性 / 位序标定 / 挑战电路取真值 |
+| | `exp_platform_mps.py` / `exp_platform_pps.py` | 平台侧 MPS 与 PPS 攻击 |
+| | `make_platform_fig.py` / `bq_diag.py` | 出图 / 403 端点诊断 |
+
+> **所有命令都在仓库根目录执行**——脚本内的相对输出路径（`autotest_results/...`）以此为准；
+> 跨目录引用（`circuits.py`、同组脚本）由脚本内的 `ROOT` 常量与 `sys.path` 注入解决，与 cwd 无关。
+
 
 ## 环境与运行
 
@@ -333,9 +362,10 @@ pip install numpy==1.26.4 scipy==1.11.2 quimb==1.7.3 matplotlib==3.8.3 autograd 
 运行：
 
 ```bash
-python smoke_test.py                 # 环境自检
-python autotest_peaked.py --quick    # 冒烟模式（约 1–2 分钟，小参数全流程）
-python autotest_peaked.py            # 完整扫描（CPU 约 20–40 分钟）
+# 全部在仓库根目录执行
+python experiments/baseline/smoke_test.py                 # 环境自检
+python experiments/baseline/autotest_peaked.py --quick    # 冒烟模式（约 1–2 分钟，小参数全流程）
+python experiments/baseline/autotest_peaked.py            # 完整扫描（CPU 约 20–40 分钟）
 ```
 
 ## 后续计划
