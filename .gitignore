@@ -5,3 +5,5 @@ _*.log
 _*.py
 _scratch/
 autotest_results/_bench_*/
+# 公开 QASM 数据集（外部下载，不入库；见 README「环境与运行」）
+data/qasm/*.qasm

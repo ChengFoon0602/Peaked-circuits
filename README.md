@@ -322,6 +322,7 @@ Peaked-circuits/
 │   ├── paper3/                      # 第三篇：L2 / PPS / TNS+BP / QASM
 │   └── platform/                    # 平台侧攻击（BlueQubit）
 ├── autotest_results/                # 实验产出（CSV / 汇总 / 图 / 摘要 md）
+├── data/qasm/                       # 公开 QASM 数据集（外部下载，git 忽略）
 └── _scratch/                        # 本地临时探针与日志（git 忽略）
 ```
 
@@ -366,6 +367,25 @@ pip install numpy==1.26.4 scipy==1.11.2 quimb==1.7.3 matplotlib==3.8.3 autograd 
 python experiments/baseline/smoke_test.py                 # 环境自检
 python experiments/baseline/autotest_peaked.py --quick    # 冒烟模式（约 1–2 分钟，小参数全流程）
 python experiments/baseline/autotest_peaked.py            # 完整扫描（CPU 约 20–40 分钟）
+```
+
+### 外部依赖（不属于本仓库，故不入库）
+
+| 环境变量 | 默认位置 | 用途 |
+|---|---|---|
+| `PEAKED_QASM_DIR` | `data/qasm/` | 公开 peaked circuit 的 QASM 数据集（`heavy_hex_49x4020` / `49x5072` / `P9_Hqap_56x1917`）。从 Quantum Advantage Tracker 的公开托管目录 `data/classically-verifiable-problems/circuit-models/peaked_circuit/` 下载后放进该目录 |
+| `KREMER_HOME` | `../peaked-circuit-simulation` | Kremer & Dupuis 的 CPU 收缩实现（`git clone https://github.com/d-kremer/peaked-circuit-simulation`，与本仓库同级即可） |
+
+两者的默认值都由脚本从 `__file__` 推出，**换机器或换 clone 位置都不用改代码**；
+目录缺失时脚本会打印当前查找路径并提示怎么设环境变量。
+
+补齐 QASM 数据集（在仓库根执行）：
+
+```bash
+BASE=https://raw.githubusercontent.com/quantum-advantage-tracker/quantum-advantage-tracker.github.io/main/data/classically-verifiable-problems/circuit-models/peaked_circuit
+for f in peaked_circuit_P9_Hqap_56x1917 peaked_circuit_heavy_hex_49x4020 peaked_circuit_heavy_hex_49x5072; do
+    curl -sL "$BASE/$f.qasm" -o "data/qasm/$f.qasm"
+done
 ```
 
 ## 后续计划

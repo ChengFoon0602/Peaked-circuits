@@ -10,8 +10,11 @@ a real script file plus the ``if __name__ == "__main__"`` guard below. Running
 this logic through a heredoc / stdin will crash with BrokenProcessPool.
 
 Usage (hqap environment, this repo's root):
-    set KREMER_HOME=D:\\桌面文件\\大三\\peaked-circuit-simulation
-    python experiments/baseline/run_kremer_cpu.py --qasm D:\\桌面文件\\大三\\peaked_qasm\\peaked_circuit_heavy_hex_49x5072.qasm
+    python experiments/baseline/run_kremer_cpu.py --qasm data/qasm/peaked_circuit_heavy_hex_49x5072.qasm
+
+``KREMER_HOME`` defaults to the sibling directory ``../peaked-circuit-simulation``
+(https://github.com/d-kremer/peaked-circuit-simulation); set the env var if the
+clone lives elsewhere.
 """
 import argparse
 import csv
@@ -20,8 +23,10 @@ import os
 import sys
 import time
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+# Kremer 仓库默认与本仓库同级；可用环境变量 KREMER_HOME 指向别处
 KREMER_HOME = os.environ.get(
-    "KREMER_HOME", r"D:\桌面文件\大三\peaked-circuit-simulation"
+    "KREMER_HOME", os.path.join(os.path.dirname(ROOT), "peaked-circuit-simulation")
 )
 
 
@@ -48,6 +53,10 @@ def main():
     ap.add_argument("--tag", default=None, help="输出文件名标签（默认取 qasm 主名）")
     args = ap.parse_args()
 
+    if not os.path.isdir(KREMER_HOME):
+        sys.exit(f"找不到 Kremer 仓库：{KREMER_HOME}\n"
+                 "git clone https://github.com/d-kremer/peaked-circuit-simulation "
+                 "到该位置，或用环境变量 KREMER_HOME 指向已有 clone。")
     if KREMER_HOME not in sys.path:
         sys.path.insert(0, KREMER_HOME)
     from utils import contract_core, tno_to_tne, extract_bitstring, iter_layers

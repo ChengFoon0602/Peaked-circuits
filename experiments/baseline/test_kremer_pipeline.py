@@ -15,8 +15,9 @@ Pass criteria
    distribution (k = 5) -- low-bond truncation is allowed to miss slightly.
 
 Usage (from this repo's root, inside the hqap environment):
-    set KREMER_HOME=D:\\桌面文件\\大三\\peaked-circuit-simulation
     python experiments/baseline/test_kremer_pipeline.py --n 10 --depth 8
+
+``KREMER_HOME`` defaults to the sibling directory ``../peaked-circuit-simulation``.
 """
 import argparse
 import os
@@ -26,8 +27,10 @@ import time
 import numpy as np
 from qiskit import QuantumCircuit
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # → 仓库根
+# Kremer 仓库默认与本仓库同级；可用环境变量 KREMER_HOME 指向别处
 KREMER_HOME = os.environ.get(
-    "KREMER_HOME", r"D:\桌面文件\大三\peaked-circuit-simulation"
+    "KREMER_HOME", os.path.join(os.path.dirname(ROOT), "peaked-circuit-simulation")
 )
 if KREMER_HOME not in sys.path:
     sys.path.insert(0, KREMER_HOME)
@@ -103,6 +106,10 @@ def main():
           f"max_bond={args.max_bond})")
     print("=" * 64)
 
+    if not os.path.isdir(KREMER_HOME):
+        sys.exit(f"找不到 Kremer 仓库：{KREMER_HOME}\n"
+                 "git clone https://github.com/d-kremer/peaked-circuit-simulation "
+                 "到该位置，或用环境变量 KREMER_HOME 指向已有 clone。")
     from utils import contract_core, tno_to_tne, extract_bitstring, iter_layers
 
     if args.mode == "product":

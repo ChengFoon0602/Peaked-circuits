@@ -17,7 +17,7 @@ gpu / mps.gpu / quantum 计费，本脚本直接拒绝。stage 3 不加 `--run` 
     python experiments/platform/platform_smoke.py --stage 0 --difficulty 40
     python experiments/platform/platform_smoke.py --stage 1
     python experiments/platform/platform_smoke.py --stage 2
-    python experiments/platform/platform_smoke.py --stage 3 --qasm D:/桌面文件/大三/peaked_qasm/peaked_circuit_P9_Hqap_56x1917.qasm --device mps.cpu
+    python experiments/platform/platform_smoke.py --stage 3 --qasm data/qasm/peaked_circuit_P9_Hqap_56x1917.qasm --device mps.cpu
 
 注意
 ----

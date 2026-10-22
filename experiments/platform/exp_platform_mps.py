@@ -57,7 +57,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))  # experiments/<group>/ → 仓库根
 TRUTH_DIR = os.path.join(ROOT, "autotest_results", "p3_kremer_cpu")
 OUT_DIR = os.path.join(ROOT, "autotest_results", "p3_platform_mps")
-QASM_DIR = "D:/桌面文件/大三/peaked_qasm"
+# 公开 QASM 数据集（Quantum Advantage Tracker 下载）：优先环境变量，默认仓库内 data/qasm/
+QASM_DIR = os.environ.get("PEAKED_QASM_DIR", os.path.join(ROOT, "data", "qasm"))
 
 FREE_DEVICES = {"mps.cpu", "cpu", "pauli-path"}
 
@@ -195,7 +196,8 @@ def main():
         qasm = os.path.join(QASM_DIR, f"peaked_circuit_{name}.qasm")
     if not os.path.isfile(qasm):
         cands = [os.path.basename(p) for p in glob.glob(os.path.join(QASM_DIR, "*.qasm"))]
-        sys.exit(f"找不到 {qasm}\n可用的有：{cands}")
+        sys.exit(f"找不到 {qasm}\n当前 QASM 目录：{QASM_DIR}\n可用的有：{cands}\n"
+                 "把 .qasm 放进去，或用环境变量 PEAKED_QASM_DIR 指向存放目录。")
 
     truth, n_truth = (args.truth, None) if args.truth else load_truth(name)
     qc, ver = load_qasm(qasm)
